@@ -1,6 +1,10 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"log"
+	"net/http"
+)
 
 var store = make(map[string]string)
 
@@ -24,6 +28,12 @@ func Delete(key string) error {
 	return nil
 }
 
-func main() {
+// Удоавлетворяет типу HandlerFunc
+func helloGoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello net/http!\n"))
+}
 
+func main() {
+	http.HandleFunc("/", helloGoHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
