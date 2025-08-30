@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"log"
 	"net/http"
 
@@ -35,8 +36,28 @@ func helloMuxHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello gorilla/mux!\n"))
 }
 
+func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
+	key := mux.Vars(r)["key"]
+	value, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = Put(key, string(value))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
+	r.HandleFunc("/v1/key/{key}", keyValuePutHandler).Methods("PUT")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
