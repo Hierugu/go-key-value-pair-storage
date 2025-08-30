@@ -55,9 +55,26 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
+	key := mux.Vars(r)["key"]
+	val, err := Get(key)
+
+	if errors.Is(err, ErrorNoSuchKey) {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(val))
+}
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
 	r.HandleFunc("/v1/key/{key}", keyValuePutHandler).Methods("PUT")
+	r.HandleFunc("/v1/key/{key}", keyValueGetHandler).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
