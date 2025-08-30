@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 var store = make(map[string]string)
@@ -29,11 +31,12 @@ func Delete(key string) error {
 }
 
 // Удоавлетворяет типу HandlerFunc
-func helloGoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello net/http!\n"))
+func helloMuxHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello gorilla/mux!\n"))
 }
 
 func main() {
-	http.HandleFunc("/", helloGoHandler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	r := mux.NewRouter()
+	r.HandleFunc("/", helloMuxHandler)
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
