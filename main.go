@@ -5,21 +5,30 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
 
-var store = make(map[string]string)
+var myMap = struct {
+	sync.RWMutex
+	m map[string]string
+}{m: make(map[string]string)}
 
 var ErrorNoSuchKey = errors.New("No such key")
 
 func Put(key, value string) error {
-	store[key] = value
+	myMap.Lock()
+	myMap.m[key] = value
+	myMap.Unlock()
 	return nil
 }
 
 func Get(key string) (string, error) {
-	value, ok := store[key]
+	myMap.RLock()
+	value, ok := myMap.m[key]
+	myMap.RUnlock()
+
 	if !ok {
 		return "", ErrorNoSuchKey
 	}
@@ -27,7 +36,9 @@ func Get(key string) (string, error) {
 }
 
 func Delete(key string) error {
-	delete(store, key)
+	myMap.Lock()
+	delete(myMap.m, key)
+	myMap.Unlock()
 	return nil
 }
 
@@ -71,10 +82,17 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(val))
 }
 
+func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	key := mux.Vars(r)["key"]
+	Delete(key)
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
 	r.HandleFunc("/v1/key/{key}", keyValuePutHandler).Methods("PUT")
 	r.HandleFunc("/v1/key/{key}", keyValueGetHandler).Methods("GET")
+	r.HandleFunc("/v1/key/{key}", keyValueDeleteHandler).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
