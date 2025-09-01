@@ -66,6 +66,7 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.WritePut(key, string(value))
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -88,6 +89,7 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 	Delete(key)
+	logger.WriteDelete(key)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -220,6 +222,8 @@ func initializeTransactionLog() error {
 }
 
 func main() {
+	initializeTransactionLog()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
 	r.HandleFunc("/v1/key/{key}", keyValuePutHandler).Methods("PUT")
