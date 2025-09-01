@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 )
 
 var myMap = struct {
@@ -226,6 +227,7 @@ func main() {
 		fmt.Printf("Error initializing TransactionLog: %e", err)
 		return
 	}
+	defer logger.file.Close()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
