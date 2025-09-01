@@ -94,6 +94,8 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // Transaction Log
 type EventType byte
 
+var logger TransactionLogger
+
 const (
 	EventDelete EventType = 1
 	EventPut    EventType = 2
@@ -188,6 +190,33 @@ func (l *FileTransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 		}
 	}()
 	return outEvent, outError
+}
+
+func initializeTransactionLog() error {
+	var err error
+	logger, err := NewFileTransactionLogger("transaction.log")
+	if err != nil {
+		return fmt.Errorf("failed to create event logger: %w", err)
+	}
+
+	events, errors := logger.ReadEvents()
+	e, ok := Event{}, true
+
+	for ok && err == nil {
+		select {
+		case err, ok = <-errors:
+		case e, ok = <-events:
+			switch e.EventType {
+			case EventDelete:
+				err = Delete(e.Key)
+			case EventPut:
+				err = Put(e.Key, e.Value)
+			}
+		}
+	}
+	logger.Run()
+
+	return err
 }
 
 func main() {
