@@ -18,7 +18,9 @@ var myMap = struct {
 	m map[string]string
 }{m: make(map[string]string)}
 
-var ErrorNoSuchKey = errors.New("No such key")
+var logger TransactionLogger
+
+var ErrorNoSuchKey = errors.New("no such key")
 
 func Put(key, value string) error {
 	myMap.Lock()
@@ -95,8 +97,6 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 // Transaction Log
 type EventType byte
-
-var logger TransactionLogger
 
 const (
 	EventDelete EventType = 1
@@ -196,7 +196,7 @@ func (l *FileTransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 
 func initializeTransactionLog() error {
 	var err error
-	logger, err := NewFileTransactionLogger("transaction.log")
+	logger, err = NewFileTransactionLogger("transaction.log")
 	if err != nil {
 		return fmt.Errorf("failed to create event logger: %w", err)
 	}
@@ -222,7 +222,10 @@ func initializeTransactionLog() error {
 }
 
 func main() {
-	initializeTransactionLog()
+	if err := initializeTransactionLog(); err != nil {
+		fmt.Printf("Error initializing TransactionLog: %e", err)
+		return
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", helloMuxHandler)
